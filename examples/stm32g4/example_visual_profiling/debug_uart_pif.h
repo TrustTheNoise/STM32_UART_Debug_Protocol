@@ -1,12 +1,11 @@
 // Description can be found in the end of the file
 #pragma once
 
-#ifndef DEVICE_DEBUG_PIF_H_
-#define DEVICE_DEBUG_PIF_H_
+#ifndef DEBUG_UART_PIF_H_
+#define DEBUG_UART_PIF_H_
 
 //#include "device_definitions.h"
-#include "stm32g474xx.h"
-#include "_cmsis_enhancement.h"
+#include "device_mcu_includes.h"
 #include "debug_utils.h"
 
 
@@ -29,15 +28,15 @@
 /*                                                                                                */
 /**************************************************************************************************/
 
-void setup_uart_debug_interface( uint32_t desired_uart_baud_rate );
+void setup_uart( uint32_t desired_uart_baud_rate );
 void setup_debug_uart_dma_interrupt( void );
 
-void debug_uart_send_message_dma( const uint8_t *message, const uint32_t message_length );
+void uart_send_message_dma( const uint8_t *message, const uint32_t message_length );
 
-uint32_t debug_uart_get_received_message_len( void );
-uint8_t* debug_uart_get_receive_buffer( void );
+uint32_t uart_get_received_message_len( void );
+uint8_t* uart_get_receive_buffer( void );
 
-void debug_uart_reset_rx_dma( void );
+void uart_reset_rx_dma( void );
 
 /**************************************************************************************************/
 /*                                                                                                */

@@ -1,4 +1,5 @@
-#include "debug_pif.h"
+#include "debug_uart_pif.h"
+
 #include "debug_utils.h"
 
 /**************************************************************************************************/
@@ -69,18 +70,10 @@ static inline uint16_t setup_uart_dma( void );
 /**************************************************************************************************/
 
 
-void setup_debug_uart_dma_interrupt( void )
-{
-    // Enable full transfer complete interrupt on DMA2 CH2
-    DMA2_Channel2->CCR |= DMA_CCR_TCIE; // [#manual] This line is [manual] because next line is [manual]
-    NVIC_EnableIRQ( DMA2_Channel2_IRQn ); // [#manual]
-}
-
-
 /**
  * @brief sets up everything needed for debug interface to work properly
  */
-void setup_uart_debug_interface( uint32_t desired_uart_baud_rate )
+void setup_uart( uint32_t desired_uart_baud_rate )
 {
     // Todo either specify UART baud rate as
     setup_uart_gpio();
@@ -88,9 +81,6 @@ void setup_uart_debug_interface( uint32_t desired_uart_baud_rate )
     setup_uart_peripheral( desired_uart_baud_rate );
 
     (void)LOG_ERROR( setup_uart_dma() );
-
-    setup_debug_uart_dma_interrupt();
-
 }
 
 
@@ -108,7 +98,7 @@ void setup_uart_debug_interface( uint32_t desired_uart_baud_rate )
  * @note The message must live long enough to be copied by the DMA! If message is corrupted so will
  * be the transfer. This is a problem of this implementation, but it also allows us not to use any other buffer in between.
  */
-void debug_uart_send_message_dma( const uint8_t* message, const uint32_t message_len )
+void uart_send_message_dma( const uint8_t* message, const uint32_t message_len )
 {
     while ( (USART3->ISR & USART_ISR_TC) != USART_ISR_TC ){} // Check that the last message was fully sent
 
@@ -129,7 +119,7 @@ void debug_uart_send_message_dma( const uint8_t* message, const uint32_t message
  *
  * @update-type: #auto
  */
-uint32_t debug_uart_get_received_message_len( void )
+uint32_t uart_get_received_message_len( void )
 {
     return (DEBUG_UART_BUFFER_SIZE - UART_RX_DMA_CH->CNDTR);
 }
@@ -139,7 +129,7 @@ uint32_t debug_uart_get_received_message_len( void )
  *
  * @update-type: #none
  */
-uint8_t* debug_uart_get_receive_buffer( void )
+uint8_t* uart_get_receive_buffer( void )
 {
     return dma_buffer;
 }
@@ -149,7 +139,7 @@ uint8_t* debug_uart_get_receive_buffer( void )
  *
  * @update-type: #auto
  */
-inline void debug_uart_reset_rx_dma( void )
+inline void uart_reset_rx_dma( void )
 {
     UART_RX_DMA_CH->CCR &= ~DMA_CCR_EN; // Disable DMA.
 
@@ -246,6 +236,9 @@ static inline uint16_t setup_uart_dma( void )
     // Set only peripheral address for TX
     UART_TX_DMA_CH->CPAR = (uint32_t)&(USART3->TDR);
 
+    DMA2_Channel2->CCR |= DMA_CCR_TCIE; // [#manual] This line is [manual] because next line is [manual]
+    NVIC_EnableIRQ( DMA2_Channel2_IRQn ); // [#manual]
+
     return 0;
 }
 
@@ -265,16 +258,16 @@ void USART3_IRQHandler()
     if( USART3->ISR & USART_ISR_RTOF ) // UART message received
     {
         // Read and do something with data received from DMA
-        const uint16_t received_size = debug_uart_get_received_message_len();
-        uint8_t* received_buffer = debug_uart_get_receive_buffer();
+        const uint16_t received_size = uart_get_received_message_len();
+        uint8_t* received_buffer = uart_get_receive_buffer();
 
         // Reset RX DMA after every timeout to make DMA write back from 0.
         // Given that we work with pointers, this can cause first bytes of the bu ffer to be overwritten
         // If a new message from master arrives right away. But behaviour like this is hard to effectively
         // prevent, and therefore it will be considered as an error on the side of the master implementation.
-        debug_uart_reset_rx_dma();
+        uart_reset_rx_dma();
 
-        debug_itf_handle_rx(received_buffer, received_size);
+        debug_handle_rx(received_buffer, received_size);
 
         USART3->ICR |= USART_ICR_RTOCF; // Clear the timeout interrupt flag
     }
@@ -307,7 +300,7 @@ void DMA2_CH2_IRQHandler( void )
 {
     if(DMA2->ISR & DMA_ISR_TCIF2)
     {
-        debug_itf_handle_tx();
+        debug_handle_tx();
 
         // Clear full transfer complete, half transfer complete and global interrupt flags for DMA channel.
         //  Even though CGIFx will clear all other flags by itself, all 3 flags are cleared manually for possible

@@ -1,8 +1,8 @@
+#include "debug_uart_pif.h"
 #include "profiling_pif.h"
+
 #include "utils_pif.h"
 #include "math.h"
-#include "debug_pif.h"
-#include "debug_utils.h"
 #include "clocking_pif.h"
 
 #define NUMBER_OF_MEASUREMENTS         100
@@ -20,6 +20,12 @@ static void example_lnf_test( void );
 static void example_expf_test( void );
 static void example_exp2f_test (void );
 static void example_setup_debug_digital_outputs( void );
+
+/**************************************************************************************************/
+/*                                                                                                */
+/*                                     Profiling event enums                                      */
+/*                                                                                                */
+/**************************************************************************************************/
 
 enum profiling_event_name_id_t
 {
@@ -51,9 +57,15 @@ enum profiling_event_name_id_t
     };
 #endif
 
+/**************************************************************************************************/
+/*                                                                                                */
+/*                                      Debug protocol setup                                      */
+/*                                                                                                */
+/**************************************************************************************************/
+
 debug_transport uart_transport =
 {
-        .send = debug_uart_send_message_dma,
+        .send = uart_send_message_dma,
 };
 
 /**************************************************************************************************/
@@ -120,7 +132,7 @@ int main(void)
 
     setup_system_clock();
 
-    setup_uart_debug_interface(500000);
+    setup_uart(500000);
     setup_debug_interface(&uart_transport);
 
     setup_profiling_stream_tracing();
@@ -190,10 +202,6 @@ int main(void)
 
         dummy_delay_us(MSEC_TO_USEC(500));
     }
-
-    // For debug buffer method, profiling runs once,
-    // followed by an infinite loop to keep the microcontroller active.
-    while(1){}
 }
 
 
