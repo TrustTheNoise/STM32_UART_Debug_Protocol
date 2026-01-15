@@ -1,4 +1,5 @@
 #include "profiling_pif.h"
+#include "utils_pif.h"
 #include "device_uart_debug_protocol.h"
 #include "math.h"
 
