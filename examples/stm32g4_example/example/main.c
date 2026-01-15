@@ -2,6 +2,7 @@
 #include "utils_pif.h"
 #include "device_uart_debug_protocol.h"
 #include "math.h"
+#include "clocking_pif.h"
 
 #define NUMBER_OF_MEASUREMENTS         100
 
@@ -70,7 +71,7 @@ enum profiling_event_name_id_t
  *  1. Connect a USB–UART converter to PB10(UART_RX) and PB11(UART_TX).
  *  2. Connect the USB–UART converter to your PC.
  *  3. Run the example.
- *  4. Download the M1.S1 project along with the Python communication scripts.
+ *  4. Open python_debug_logger
  *
  * For the debug stream:
  *  5.a. Set the COM port (connected to USB–UART) and baud rate to 500000, then run com_save_stream.py.
@@ -87,7 +88,7 @@ enum profiling_event_name_id_t
  *  7. Run trace_event_parser.py with two required arguments:
  *     - First: the path to the profiling .csv file.
  *     - Second: the path to the JSON file describing each trace event (included in the example as points_description.json).
- *     Example (assuming both files are in the log folder of M1.S1):
+ *     Example (assuming both files are in the log folder of python_debug_logger):
  *
  *     python .\trace_event_parser.py .\logs\buffers_log_1757517364.csv .\points_description.json
  *
@@ -109,7 +110,9 @@ enum profiling_event_name_id_t
  */
 int main(void)
 {
-    SCB->CPACR |= 0b11 << 20 | 0b11 << 22; // Enables CP11 and CP10 of FPU
+    enable_fpu();
+
+    setup_system_clock();
 
     setup_profiling_stream_tracing();
     setup_profiling_buffer_tracing();

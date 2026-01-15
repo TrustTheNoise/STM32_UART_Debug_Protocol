@@ -8,6 +8,9 @@
 *Release/
 *Src/
 
+*.csv
+*.json
+
 .cproject
 .project
 .settings/
@@ -58,6 +61,7 @@
 *.su
 *.idb
 *.pdb
+*.launch
 
 # Kernel Module Compile Results
 *.mod*
