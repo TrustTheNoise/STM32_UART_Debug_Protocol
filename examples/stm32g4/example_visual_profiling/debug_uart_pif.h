@@ -6,7 +6,8 @@
 
 //#include "device_definitions.h"
 #include "device_mcu_includes.h"
-#include "debug_utils.h"
+
+#include "../../../src/debug_lib/debug_utils.h"
 
 
 

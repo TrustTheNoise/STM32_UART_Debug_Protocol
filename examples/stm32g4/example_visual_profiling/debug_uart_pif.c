@@ -1,6 +1,6 @@
 #include "debug_uart_pif.h"
 
-#include "debug_utils.h"
+#include "../../../src/debug_lib/debug_utils.h"
 
 /**************************************************************************************************/
 /*                                                                                                */
