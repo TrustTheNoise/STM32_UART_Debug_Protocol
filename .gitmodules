@@ -1,0 +1,6 @@
+[submodule "examples/stm32g4_example/STM32_CMSIS_SDK/stm32g4_sdk"]
+	path = examples/stm32g4_example/STM32_CMSIS_SDK/stm32g4_sdk
+	url = https://github.com/TrustTheNoise/STM32_CMSIS_SDK.git
+[submodule "examples/stm32g4_example/stm32g4_sdk"]
+	path = examples/stm32g4_example/stm32g4_sdk
+	url = https://github.com/TrustTheNoise/STM32_CMSIS_SDK.git
