@@ -1,4 +1,5 @@
 #include "debug_pif.h"
+#include "debug_utils.h"
 
 /**************************************************************************************************/
 /*                                                                                                */
@@ -67,25 +68,29 @@ static inline uint16_t setup_uart_dma( void );
 /*                                                                                                */
 /**************************************************************************************************/
 
-/**
- * @brief Sets up UART to a provided baud_rate
- *
- * @update-type: #none
- */
-void setup_debug_uart( uint32_t desired_uart_baud_rate )
-{
-    setup_uart_gpio();
-
-    setup_uart_peripheral( desired_uart_baud_rate );
-
-    (void)LOG_ERROR( setup_uart_dma() );
-}
 
 void setup_debug_uart_dma_interrupt( void )
 {
     // Enable full transfer complete interrupt on DMA2 CH2
     DMA2_Channel2->CCR |= DMA_CCR_TCIE; // [#manual] This line is [manual] because next line is [manual]
     NVIC_EnableIRQ( DMA2_Channel2_IRQn ); // [#manual]
+}
+
+
+/**
+ * @brief sets up everything needed for debug interface to work properly
+ */
+void setup_uart_debug_interface( uint32_t desired_uart_baud_rate )
+{
+    // Todo either specify UART baud rate as
+    setup_uart_gpio();
+
+    setup_uart_peripheral( desired_uart_baud_rate );
+
+    (void)LOG_ERROR( setup_uart_dma() );
+
+    setup_debug_uart_dma_interrupt();
+
 }
 
 
@@ -243,5 +248,74 @@ static inline uint16_t setup_uart_dma( void )
 
     return 0;
 }
+
+
+/**************************************************************************************************/
+/*                                                                                                */
+/*                                        Interrupt handlers                                      */
+/*                                                                                                */
+/**************************************************************************************************/
+
+/**
+ * @brief debug UART interrupt handler
+ */
+void USART3_IRQHandler()
+{
+    // UART data receive sections
+    if( USART3->ISR & USART_ISR_RTOF ) // UART message received
+    {
+        // Read and do something with data received from DMA
+        const uint16_t received_size = debug_uart_get_received_message_len();
+        uint8_t* received_buffer = debug_uart_get_receive_buffer();
+
+        // Reset RX DMA after every timeout to make DMA write back from 0.
+        // Given that we work with pointers, this can cause first bytes of the bu ffer to be overwritten
+        // If a new message from master arrives right away. But behaviour like this is hard to effectively
+        // prevent, and therefore it will be considered as an error on the side of the master implementation.
+        debug_uart_reset_rx_dma();
+
+        debug_itf_handle_rx(received_buffer, received_size);
+
+        USART3->ICR |= USART_ICR_RTOCF; // Clear the timeout interrupt flag
+    }
+
+    // UART error handling section
+    if (USART3->ISR & USART_ISR_ORE) // Overrun error detected;
+    {
+        USART3->ICR = USART_ICR_ORECF;
+        LOG_ERROR(533); // USART1_OVERRUN_Error
+    }
+
+    if (USART3->ISR & USART_ISR_NE) // Noise error detected;
+    {
+        USART3->ICR = USART_ICR_NECF;
+        LOG_ERROR(522); // USART1_NOISE_DETECTION_Error
+    }
+
+    if(USART3->ISR & USART_ISR_FE) // Framing error detected;
+    {
+        USART3->ICR = USART_ICR_FECF;
+        LOG_ERROR(511); // USART1_FRAMING_Error
+    }
+}
+
+
+/**
+ * @brief debug UART TX DMA interrupt handler
+ */
+void DMA2_CH2_IRQHandler( void )
+{
+    if(DMA2->ISR & DMA_ISR_TCIF2)
+    {
+        debug_itf_handle_tx();
+
+        // Clear full transfer complete, half transfer complete and global interrupt flags for DMA channel.
+        //  Even though CGIFx will clear all other flags by itself, all 3 flags are cleared manually for possible
+        //  Compatibility reasons with other STM32 families
+        DMA2->IFCR = DMA_IFCR_CTCIF2 | DMA_IFCR_CHTIF2 | DMA_IFCR_CGIF2;
+    }
+}
+
+
 
 // EOF

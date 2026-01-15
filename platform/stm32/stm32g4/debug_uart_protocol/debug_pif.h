@@ -29,7 +29,7 @@
 /*                                                                                                */
 /**************************************************************************************************/
 
-void setup_debug_uart( const uint32_t desired_uart_baud_rate );
+void setup_uart_debug_interface( uint32_t desired_uart_baud_rate );
 void setup_debug_uart_dma_interrupt( void );
 
 void debug_uart_send_message_dma( const uint8_t *message, const uint32_t message_length );

@@ -1,7 +1,8 @@
 #include "profiling_pif.h"
 #include "utils_pif.h"
-#include "device_uart_debug_protocol.h"
 #include "math.h"
+#include "debug_pif.h"
+#include "debug_utils.h"
 #include "clocking_pif.h"
 
 #define NUMBER_OF_MEASUREMENTS         100
@@ -49,6 +50,11 @@ enum profiling_event_name_id_t
         PROFILING_THREAD_MATH       = 3,
     };
 #endif
+
+debug_transport uart_transport =
+{
+        .send = debug_uart_send_message_dma,
+};
 
 /**************************************************************************************************/
 /*                                                                                                */
@@ -113,6 +119,9 @@ int main(void)
     enable_fpu();
 
     setup_system_clock();
+
+    setup_uart_debug_interface(500000);
+    setup_debug_interface(&uart_transport);
 
     setup_profiling_stream_tracing();
     setup_profiling_buffer_tracing();
